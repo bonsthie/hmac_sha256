@@ -18,6 +18,6 @@ enum bits_format
 	U512 = 512
 };
 
-void print_bites(const void *buffer, size_t buffer_len, enum bits_format format, int fd);
+void print_bits(const void *buffer, size_t buffer_len, enum bits_format format, int fd);
 
 #endif /* __PRINT_BITS_H__ */

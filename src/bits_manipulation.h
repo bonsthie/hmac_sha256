@@ -5,13 +5,13 @@
 #include <sys/cdefs.h>
 
 __always_inline
-uint32_t shr32(uint32_t value, uint8_t bits)
+uint32_t __shr32(uint32_t value, uint8_t bits)
 {
 	return (value >> bits);
 }
 
 __always_inline
-uint32_t rotr32(uint32_t value, uint8_t bits)
+uint32_t __rotr32(uint32_t value, uint8_t bits)
 {
 	return ((value >> bits ) | value << (32 - bits));
 }

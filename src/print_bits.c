@@ -13,7 +13,7 @@ static void print_bites_epi8(char c, int fd)
 	write(fd, buffer, 8);
 }
 
-void print_bites(const void *buffer, size_t buffer_len, enum bits_format format, int fd)
+void print_bits(const void *buffer, size_t buffer_len, enum bits_format format, int fd)
 {
 	const char *str_buf = buffer;
 
