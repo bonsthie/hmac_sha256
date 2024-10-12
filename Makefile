@@ -1,7 +1,7 @@
 TARGET = libsha256.a
 
 CC = clang
-CFLAGS = -Wall -Wextra -Werror -fPIC -g
+CFLAGS = -Wall -Wextra -Werror -fPIC -g -mavx2 -O3
 
 SRCDIR = src
 OBJDIR = obj

@@ -1,10 +1,12 @@
 #include "print_bits.h"
 #include "sha256_utils.h"
+#include "sha256_utils_avx2.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/cdefs.h>
 
 static uint8_t *create_padded_buffer(const uint8_t *buffer, size_t buffer_size, size_t *padded_size)
 {
@@ -13,12 +15,13 @@ static uint8_t *create_padded_buffer(const uint8_t *buffer, size_t buffer_size, 
 
     assert((*padded_size % 64) == 0);
 
-    uint8_t *padded_buffer = malloc(*padded_size * sizeof(uint8_t));
+    uint8_t *padded_buffer = _mm_malloc(*padded_size * sizeof(uint8_t), 32);
     if (!padded_buffer)
     {
         *padded_size = 0;
         return (NULL);
     }
+	assert((((uintptr_t)padded_buffer) % 32) == 0);
 
     // Copy original message and append '1' bit (0x80)
     memcpy(padded_buffer, buffer, buffer_size);
@@ -52,12 +55,32 @@ static void prepare_message_schedule(uint32_t words[64], const uint8_t *block)
     }
 
     // Words 16-63
-    for (int i = 16; i < 64; i++)
-    {
-        uint32_t s0 = __gamma0_32(words[i - 15]);
-        uint32_t s1 = __gamma1_32(words[i - 2]);
-        words[i] = words[i - 16] + s0 + words[i - 7] + s1;
-    }
+    /* for (int i = 16; i < 64; i++) */
+    /* { */
+    /*     uint32_t s0 = __gamma0_32(words[i - 15]); */
+    /*     uint32_t s1 = __gamma1_32(words[i - 2]); */
+    /*     words[i] = words[i - 16] + s0 + words[i - 7] + s1; */
+    /* } */
+	for (int i = 16; i < 64; i+= 4)
+	{
+		__m128i w15 = _mm_loadu_si128((__m128i *)&words[i - 15]);
+		__m128i w16 = _mm_loadu_si128((__m128i *)&words[i - 16]);
+		__m128i w7 = _mm_loadu_si128((__m128i *)&words[i - 7]);
+	
+		__m128i s0 = __mm_gamma0_32(w15);
+	
+		__m128i new_word = _mm_add_epi32(w16, s0);
+		new_word = _mm_add_epi32(new_word, w7);
+	
+		_mm_storeu_si128((__m128i *)&words[i], new_word);
+		const uint32_t *store = &words[i - 2];
+		for (int y = 0; y < 4; y++)
+		{
+			words[i + y] += __gamma1_32(store[y]);
+	
+		}
+	}
+
 }
 
 static void compute_hash_block(uint32_t hash[8], uint32_t words[64])
@@ -116,7 +139,7 @@ static void calculate_sha256(const uint8_t *buffer, size_t buffer_size, uint8_t 
     }
 }
 
-int sha256(const void *buffer, size_t buffer_size, uint8_t sha256_key[32])
+int sha256_avx2(const void *buffer, size_t buffer_size, uint8_t sha256_key[32])
 {
     size_t padded_size;
     uint8_t *padded_buffer = create_padded_buffer(buffer, buffer_size, &padded_size);
