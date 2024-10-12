@@ -1,15 +1,11 @@
-#ifndef __SHA256_H__
-#define __SHA256_H__
+#ifndef __SHA256_UTILS_H__
+#define __SHA256_UTILS_H__
 
+#include "bits_manipulation.h"
 #include <stdint.h>
+#include <sys/cdefs.h>
 
 #define BLOCK_SIZE 64
-
-#define SHR(value, bits) ((value) >> (bits))
-#define SHR32(value, bits) SHR(((value) & UINT32_MAX), bits)
-
-#define ROR(value, bits, size) (SHR(value, bits) | (value) << ((size) - (bits)))
-#define ROR32(value, bits) ROR(((value) & UINT32_MAX), bits, 32)
 
 static const uint32_t K[64] = {
     0x428a2f98UL, 0x71374491UL, 0xb5c0fbcfUL, 0xe9b5dba5UL, 0x3956c25bUL,
@@ -39,4 +35,42 @@ static const uint32_t K[64] = {
                                                                                \
   })
 
-#endif /* __SHA256_H__ */
+__always_inline
+uint32_t gamma0_32(uint32_t value)
+{
+	return (rotr32(value, 7) ^ rotr32(value, 18) ^ shr32(value, 3));
+}
+
+__always_inline
+uint32_t gamma1_32(uint32_t value)
+{
+	return (rotr32(value, 17) ^ rotr32(value, 19) ^ shr32(value, 10));
+}
+
+__always_inline
+uint32_t sigma0_32(uint32_t value)
+{
+	return (rotr32(value, 2) ^ rotr32(value, 13) ^ rotr32(value, 22));
+}
+
+__always_inline
+uint32_t sigma1_32(uint32_t value)
+{
+	return (rotr32(value, 6) ^ rotr32(value, 11) ^ rotr32(value, 25));
+}
+
+/* Ch (choose) */
+__always_inline
+uint32_t ch32(uint32_t x, uint32_t y, uint32_t z)
+{
+	return (z ^ (x & (y ^ z)));
+}
+
+/* Maj (majority) */
+__always_inline
+uint32_t maj32(uint32_t x, uint32_t y, uint32_t z)
+{
+    return ((x & y) ^ (x & z) ^ (y & z));
+}
+
+#endif /* __SHA256_UTILS_H__ */
